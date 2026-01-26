@@ -102,10 +102,10 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
     if not use_mp:
         total = len(jobs)
         with tqdm(total=total, desc="Runs", dynamic_ncols=True) as pbar:
-            for job in jobs:
+            for job_index, job in enumerate(jobs):
                 try:
                     dev = 0
-                    payload = run_job(dev, job, global_config, bfn_config, iterator_names)
+                    payload = run_job(dev, job, global_config, bfn_config, iterator_names, job_index=job_index)
                     kind, out = "ok", payload
                 except Exception as e:
                     import traceback
@@ -157,8 +157,8 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
     NUM_GPUS = torch.cuda.device_count()
     
     # Enqueue all jobs
-    for job in jobs:
-        job_queue.put(job)
+    for job_index, job in enumerate(jobs):
+        job_queue.put(("job", job_index, job))
     
     # Enqueue sentinel values (None) to signal workers to stop
     for _ in range(NUM_GPUS):

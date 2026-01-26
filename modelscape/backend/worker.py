@@ -11,11 +11,15 @@ def worker(device_id, job_queue, result_queue, global_config, bfn_config, iterat
             return
 
     while True:
-        job = job_queue.get()
-        if job is None:
+        item = job_queue.get()
+        if item is None:
             break
         try:
-            payload = run_job(device_id, job, global_config, bfn_config, iterator_names)
+            job_index = 0
+            job = item
+            if isinstance(item, tuple) and len(item) == 3 and item[0] == "job":
+                _, job_index, job = item
+            payload = run_job(device_id, job, global_config, bfn_config, iterator_names, job_index=job_index)
             payload = tuple_to_numpy(payload)
             
             result_queue.put(("ok", payload))

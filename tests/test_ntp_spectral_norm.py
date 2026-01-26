@@ -65,6 +65,10 @@ def _spectral_norm(tensor):
     return float(torch.linalg.matrix_norm(tensor, ord=2).item())
 
 
+def _layer_multiplier(layer):
+    return float(getattr(layer, "_multiplier", 1.0))
+
+
 def _scaling_exponent(widths, values):
     x = np.log(np.asarray(widths, dtype=float))
     y = np.log(np.asarray(values, dtype=float))
@@ -77,7 +81,6 @@ def _run_width(width, X, y, steps=10, seed=0):
     bfn = _make_batch_fn(X, y, bsz=64, gen=gen)
 
     model = MLP(d_in=X.shape[1], width=width, depth=2, d_out=1)
-    w0 = model.hidden_layers[0].weight.detach().clone()
 
     out = train_model(
         model=model,
@@ -92,10 +95,21 @@ def _run_width(width, X, y, steps=10, seed=0):
         mup_param="ntp",
     )
 
-    trained = out["model"].model
+    wrapper = out["model"]
+    baseline = wrapper.baseline
+    trained = wrapper.model
+
+    w0 = baseline.hidden_layers[0].weight.detach().clone()
     w1 = trained.hidden_layers[0].weight.detach().clone()
 
-    return _spectral_norm(w0), _spectral_norm(w1 - w0)
+    g_hidden = _layer_multiplier(baseline.hidden_layers[0])
+    # g_readout = _layer_multiplier(baseline.output_layer)
+
+    init_eff = g_hidden * w0
+    # Account for feedforward + gradient prefactors from mupify.
+    delta_eff = g_hidden * (w1 - w0)
+
+    return _spectral_norm(init_eff), _spectral_norm(delta_eff)
 
 
 class TestNTPSpectralNorms(unittest.TestCase):
@@ -116,10 +130,10 @@ class TestNTPSpectralNorms(unittest.TestCase):
         slope_delta = _scaling_exponent(widths, delta_norms)
 
         self.assertTrue(math.isfinite(slope_init) and math.isfinite(slope_delta))
-        # NTP: init stays O(1), delta scales ~O(sqrt(w)).
+        # NTP: init stays O(1); delta shrinks with width once prefactors are applied.
         self.assertLess(abs(slope_init), 0.2)
-        self.assertGreater(slope_delta, 0.35)
-        self.assertLess(slope_delta, 0.65)
+        self.assertLess(slope_delta, -0.1)
+        self.assertGreater(slope_delta, -1.0)
 
 
 if __name__ == "__main__":

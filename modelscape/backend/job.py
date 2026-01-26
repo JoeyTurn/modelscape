@@ -42,7 +42,7 @@ def get_model_class(global_config):
     return MLP #default model
 
 
-def run_job(device_id, job, global_config, bfn_config, iterator_names, **kwargs):
+def run_job(device_id, job, global_config, bfn_config, iterator_names, job_index=0, **kwargs):
     """
     job: (n, trial, else)
     global_config: anything read-only you want to avoid capturing from globals
@@ -56,7 +56,7 @@ def run_job(device_id, job, global_config, bfn_config, iterator_names, **kwargs)
         device = torch.device("cpu")
 
     base_seed = global_config.get("SEED", None)
-    job_seed  = derive_seed(base_seed, device_id)
+    job_seed = derive_seed(base_seed, device_id) + int(job_index or 0)
     GEN, RNG = seed_everything(job_seed, device_id)
     
     iter_spec = {iterator_names[i]: job[i] for i in range(2, len(iterator_names))}
