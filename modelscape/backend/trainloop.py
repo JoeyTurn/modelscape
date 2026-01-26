@@ -64,21 +64,53 @@ def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoi
     if has_abs and is_relative or not has_abs and not is_relative:
         raise ValueError("Provide exactly one of loss_checkpoints OR percent_thresholds.")
 
-    opt_cls = _resolve_cls(optimizer, optim)
-    opt_kwargs, kwargs = _extract_kwargs_for(opt_cls, kwargs)
-    loss_cls = _resolve_cls(loss, nn)
-    loss_kwargs, kwargs = _extract_kwargs_for(loss_cls, kwargs)
+    optimizer_cls = (
+        kwargs.pop("OPTIMIZER_CLASS", None)
+        or kwargs.pop("optimizer_class", None)
+        or kwargs.pop("OPTIMIZER_FN", None)
+        or kwargs.pop("optimizer_fn", None)
+    )
+    optimizer_instance = (
+        kwargs.pop("OPTIMIZER_INSTANCE", None)
+        or kwargs.pop("optimizer_instance", None)
+    )
+
+    if optimizer_instance is None:
+        opt_cls = optimizer_cls if optimizer_cls is not None else _resolve_cls(optimizer, optim)
+        opt_kwargs, kwargs = _extract_kwargs_for(opt_cls, kwargs)
+    else:
+        opt_cls = None
+    loss_cls = None
+    loss_kwargs = {}
+    loss_class = (
+        kwargs.pop("LOSS_CLASS", None)
+        or kwargs.pop("loss_class", None)
+        or kwargs.pop("LOSS_FN", None)
+        or kwargs.pop("loss_fn", None)
+    )
+    loss_instance = (
+        kwargs.pop("LOSS_INSTANCE", None)
+        or kwargs.pop("loss_instance", None)
+    )
+    if loss_instance is None:
+        loss_cls = loss_class if loss_class is not None else _resolve_cls(loss, nn)
+        loss_kwargs, kwargs = _extract_kwargs_for(loss_cls, kwargs)
 
     # model stuff
-    lr = lr * gamma if gamma >= 1 else lr * (gamma**2.)
-    opt_kwargs.setdefault("lr", lr)
-
-    opt = opt_cls(model.parameters(), **opt_kwargs)
+    if optimizer_instance is None:
+        lr = lr * gamma if gamma >= 1 else lr * (gamma**2.)
+        opt_kwargs.setdefault("lr", lr)
+        opt = opt_cls(model.parameters(), **opt_kwargs)
+    else:
+        opt = optimizer_instance
     # opt = torch.optim.SGD(model.parameters(), lr=lr)
     mupify(model, opt, param=mup_param)
     rescale(model, gamma)
     model = centeredmodel(model).to(next(model.parameters()).device)
-    loss_fn = loss_cls(**loss_kwargs)
+    if loss_instance is None:
+        loss_fn = loss_cls(**loss_kwargs)
+    else:
+        loss_fn = loss_instance
     # loss_fn = torch.nn.MSELoss()
 
     # thresholding

@@ -11,7 +11,7 @@ if TEST_ROOT not in sys.path:
     sys.path.insert(0, TEST_ROOT)
 
 from modelscape.model import MLP
-from modelscape.backend.trainloop import train_MLP
+from modelscape.backend.trainloop import train_model
 
 
 def _to_torch(x):
@@ -73,7 +73,7 @@ def _run_width(width, X, y, steps=10, seed=0):
     model = MLP(d_in=X.shape[1], width=width, depth=2, d_out=1)
     w0 = model.hidden_layers[0].weight.detach().clone()
 
-    out = train_MLP(
+    out = train_model(
         model=model,
         batch_function=bfn,
         lr=1e-2,
