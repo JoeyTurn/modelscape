@@ -1,0 +1,8 @@
+numpy
+torch
+tqdm
+einops
+scipy
+matplotlib
+mupify @ git+https://github.com/dkarkada/mupify.git
+expt-core @ git+https://github.com/dkarkada/expt-core.git
