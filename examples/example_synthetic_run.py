@@ -96,12 +96,7 @@ if __name__ == "__main__":
     bfn_config = dict(lambdas=lambdas, Vt=Vt, data_eigvals=data_eigvals, N=args.N_TOT, base_bfn=polynomial_batch_fn)
     
 
-    global_config = dict(depth=args.depth, width=args.width, LR=args.LR, GAMMA=args.GAMMA,
-        EMA_SMOOTHER=args.EMA_SMOOTHER, MAX_ITER=args.MAX_ITER,
-        LOSS_CHECKPOINTS=args.LOSS_CHECKPOINTS, N_TEST=args.N_TEST,
-        SEED=args.SEED, ONLYTHRESHOLDS=args.ONLYTHRESHOLDS, DIM=dim,
-        ONLINE=args.ONLINE, VERBOSE=args.VERBOSE
-        )
+    global_config = args.__dict__.copy()
 
     grabs = {}
     global_config.update({"otherreturns": grabs})

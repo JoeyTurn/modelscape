@@ -83,7 +83,19 @@ def run_job(device_id, job, global_config, bfn_config, iterator_names, job_index
 
     bfn = make_bfn(job[0], X=X_tr, y=y_tr, **bfn_iter_args)
     
-    global_config["d_in"] = global_config["DIM"] if "DIM" in global_config else global_config["dim"] if "dim" in global_config else global_config["d_in"]
+    d_in = global_config.get("DIM", None)
+    if d_in is None:
+        d_in = global_config.get("dim", None)
+    if d_in is None:
+        d_in = global_config.get("d_in", None)
+    if d_in is None:
+        if X_te is not None and hasattr(X_te, "shape") and len(X_te.shape) >= 2:
+            d_in = int(X_te.shape[1])
+        elif X_tr is not None and hasattr(X_tr, "shape") and len(X_tr.shape) >= 2:
+            d_in = int(X_tr.shape[1])
+    if d_in is None:
+        raise KeyError("d_in missing: set DIM/dim/d_in or provide X_te/X_tr with at least 2 dims")
+    global_config["d_in"] = d_in
     model_cls = get_model_class(global_config)
     mlp_kwargs, _ = _extract_kwargs_for(model_cls, global_config)
     model = model_cls(**mlp_kwargs).to(device)

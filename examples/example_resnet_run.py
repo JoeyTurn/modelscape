@@ -137,20 +137,14 @@ if __name__ == "__main__":
 
     U, lambdas, Vt = torch.linalg.svd(X_full_flat, full_matrices=False)
     dim = X_full_flat.shape[1]
+    args.DIM = dim
 
     args.in_channels = X_full.shape[1]
     
     bfn_config = dict(X_total = X_full, y_total = y_full, base_bfn=general_batch_fn)
     del X_full, y_full   
 
-    global_config = dict(depth=args.depth, width=args.width, LR=args.LR, GAMMA=args.GAMMA,
-        EMA_SMOOTHER=args.EMA_SMOOTHER, MAX_ITER=args.MAX_ITER,
-        LOSS_CHECKPOINTS=args.LOSS_CHECKPOINTS, N_TEST=args.N_TEST,
-        SEED=args.SEED, ONLYTHRESHOLDS=args.ONLYTHRESHOLDS, DIM=dim,
-        ONLINE=args.ONLINE, VERBOSE=args.VERBOSE, MODEL_CLASS=args.MODEL_CLASS,
-        OPTIMIZER_CLASS=args.OPTIMIZER_CLASS, LOSS_CLASS=args.LOSS_CLASS,
-        in_channels=args.in_channels, num_blocks=args.num_blocks
-        )
+    global_config = args.__dict__.copy()
 
     grabs = {}
     global_config.update({"otherreturns": grabs})
