@@ -21,7 +21,7 @@ def _resolve_cls(spec, module):
     raise TypeError(f"optimizer/loss spec must be str or callable, got {type(spec)}")
 
 
-def train_MLP(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoints=None, percent_thresholds=None,
+def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoints=None, percent_thresholds=None,
                   gamma=1., ema_smoother=0.0, X_tr=None, y_tr=None, X_te=None, y_te=None, only_thresholds=False,
                   verbose=False, optimizer="SGD", loss="MSELoss", mup_param="mup", **kwargs):
     """

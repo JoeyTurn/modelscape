@@ -4,7 +4,7 @@ import importlib
 
 from modelscape.backend.utils import seed_everything, derive_seed, _extract_kwargs_for, ensure_torch
 from modelscape.model import MLP
-from modelscape.backend.trainloop import train_MLP
+from modelscape.backend.trainloop import train_model
 
 def load_fn_from_file(path, name):
     """
@@ -88,7 +88,7 @@ def run_job(device_id, job, global_config, bfn_config, iterator_names, **kwargs)
     mlp_kwargs, _ = _extract_kwargs_for(model_cls, global_config)
     model = model_cls(**mlp_kwargs).to(device)
 
-    outdict = train_MLP(
+    outdict = train_model(
         model=model,
         batch_function=bfn,
         lr=global_config["LR"],
