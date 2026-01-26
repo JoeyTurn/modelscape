@@ -5,7 +5,7 @@ For general usage, please run `pip install -r requirements.txt`, which *should* 
 Please have Dhruva Karkada's [mupify](https://github.com/dkarkada/mupify/tree/main) and [experiment core](https://github.com/dkarkada/expt-core/tree/main) installed and in the path. These are downloaded by running the pip command above.
 
 **Overview**
-Now introducing **modelscape**! This is a generalization of `modelscape`, now adapted to any model of choice.
+Now introducing **modelscape**! This is a generalization of `MLPscape`, now adapted to any model of choice.
 
 This repo is the result of the past few months of tinkering around with MLPs (and now models), finding I would often need to change my training loop for the specific problem, or I would need to change my outer loop to deal with the cartesian product of experiments, or change my code altogether if I was doing online vs offline learning. I have tried to create this repo to address all of the above, resulting in code where any functions that need to be evaluated within the trainloop can be specified once as what is essentially a hyperparameter. This code is designed to be able to use both *.py* files as well as *.ipynb* notebooks, with minimal changes going between the two settings! The core functionality is hidden within the `backend` folder, defining the trainloop as well as multiprocessing and command-line specifications; this can largely be ignored for most use cases.
 
@@ -24,8 +24,8 @@ See the `examples` folder for the typical use, which roughly follows
 It is highly recommended to import only 
 
 ```python
-from backend.cli import parse_args (.py files) OR base_args (.ipynb files)
-from backend.job_iterator import main as run_job_iterator
+from modelscape.backend.cli import parse_args (.py files) OR base_args (.ipynb files)
+from modelscape.backend.job_iterator import main as run_job_iterator
 ```
 
 from the backend. 
