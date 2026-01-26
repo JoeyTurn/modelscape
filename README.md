@@ -1,8 +1,8 @@
 **Requirements**
 
-For general usage, please run `pip install -r requirements.txt`, which *should* add everything. If it doesn't, please open an issue detailing it.
+For general usage, please run `pip install .`, which *should* add everything. If it doesn't. try `pip install -r requirements.txt`, and if that doesn't work, please open an issue detailing it.
 
-Please have Dhruva Karkada's [mupify](https://github.com/dkarkada/mupify/tree/main) and [experiment core](https://github.com/dkarkada/expt-core/tree/main) installed and in the path. These are downloaded by running the pip command above.
+<!-- Please have Dhruva Karkada's [mupify](https://github.com/dkarkada/mupify/tree/main) and [experiment core](https://github.com/dkarkada/expt-core/tree/main) installed and in the path. These are downloaded by running the pip command above. -->
 
 **Overview**
 Now introducing **modelscape**! This is a generalization of `MLPscape`, now adapted to any model of choice.
