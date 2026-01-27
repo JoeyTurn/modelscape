@@ -104,8 +104,9 @@ def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoi
     else:
         opt = optimizer_instance
     # opt = torch.optim.SGD(model.parameters(), lr=lr)
-    mupify(model, opt, param=mup_param)
-    rescale(model, gamma)
+    if mup_param != "sp":
+        mupify(model, opt, param=mup_param)
+        rescale(model, gamma)
     model = centeredmodel(model).to(next(model.parameters()).device)
     if loss_instance is None:
         loss_fn = loss_cls(**loss_kwargs)
