@@ -128,7 +128,7 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
                     
                     job_str = " | ".join([f"{name}={val}" for name, val in zip(iterator_names, job)])
                     pbar.set_postfix_str(
-                        f"train {test_losses:.3g} | test {train_losses:.3g} | timekey {timekeys} | {job_str}",
+                        f"train {train_losses:.3g} | test {test_losses:.3g} | timekey {timekeys} | {job_str}",
                         refresh=False
                     )
                 else:
