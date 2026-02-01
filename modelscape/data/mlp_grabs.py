@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from MLPscape.backend.utils import ensure_torch, ensure_numpy
+from modelscape.backend.utils import ensure_torch, ensure_numpy
 
 def get_Win(model: nn.Module, *, detach: bool = True, **kwargs):
     Win = model.input_layer.weight

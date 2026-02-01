@@ -5,8 +5,8 @@ import math
 import os
 from einops import reduce, rearrange
 
-from MLPscape.data.monomial import generate_hea_monomials
-from MLPscape.backend.utils import ensure_numpy, ensure_torch
+from modelscape.data.monomial import generate_hea_monomials
+from modelscape.backend.utils import ensure_numpy, ensure_torch
 
 from torch.utils.data import TensorDataset, DataLoader
 
