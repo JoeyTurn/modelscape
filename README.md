@@ -2,6 +2,8 @@
 
 For general usage, please run `pip install .`, which *should* add everything. If it doesn't. try `pip install -r requirements.txt`, and if that doesn't work, please open an issue detailing it.
 
+Dhruva Karkada's [mupify](https://github.com/dkarkada/mupify/tree/main) and [experiment core](https://github.com/dkarkada/expt-core/tree/main) are recomended to be installed, but are not required.
+
 <!-- Please have Dhruva Karkada's [mupify](https://github.com/dkarkada/mupify/tree/main) and [experiment core](https://github.com/dkarkada/expt-core/tree/main) installed and in the path. These are downloaded by running the pip command above. -->
 
 **Overview**

@@ -10,10 +10,9 @@ import os
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-from ExptTrace import ExptTrace
-
 from modelscape.backend.worker import worker
 from modelscape.backend.job import run_job
+from modelscape.backend.utils import _make_trace, _trace_set
 
 
 def normalize_bfn_config(bfn_config, use_mp=False):
@@ -76,12 +75,12 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
     jobs = list(product(*iterators))
 
     var_axes = list(iterator_names)
-    et_losses = ExptTrace(var_axes)
-    et_timekeys = ExptTrace(var_axes)
+    et_losses = _make_trace(var_axes)
+    et_timekeys = _make_trace(var_axes)
     
     # Get grab aliases from global_config if available
     grab_aliases = list(global_config.get("otherreturns", {}).keys()) if global_config is not None else []
-    et_extras = {alias: ExptTrace(var_axes) for alias in grab_aliases}
+    et_extras = {alias: _make_trace(var_axes) for alias in grab_aliases}
     
     if use_mp is None:
         # If the user explicitly called mp.set_start_method("spawn", ...)
@@ -116,11 +115,11 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
                     job, timekeys, train_losses, test_losses, *others = payload
                     job = sanitize_expt_trace(job)
 
-                    et_losses[job] = test_losses
-                    et_timekeys[job] = timekeys
+                    _trace_set(et_losses, job, test_losses)
+                    _trace_set(et_timekeys, job, timekeys)
                     
                     for kidx, k in enumerate(grab_aliases):
-                        et_extras[k][job] = others[kidx]
+                        _trace_set(et_extras[k], job, others[kidx])
                     
                     if not(global_config["ONLYTHRESHOLDS"]):
                         train_losses = train_losses[-1]
@@ -140,9 +139,9 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
         result = {
         "jobs": jobs,
         "var_axes": var_axes,
-        "losses": et_losses.serialize(),
-        "timekeys": et_timekeys.serialize(),
-        "extras": {name: et_extras[name].serialize() for name in grab_aliases},
+        "losses": et_losses,
+        "timekeys": et_timekeys,
+        "extras": {name: et_extras[name] for name in grab_aliases},
         }
 
         return result
@@ -182,12 +181,12 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
                 job, timekeys, train_losses, test_losses, *others = payload
                 job = job[:-1] + (str(job[-1]),)
                 # Store results indexed by job tuple
-                et_losses[job] = test_losses
-                et_timekeys[job] = timekeys
+                _trace_set(et_losses, job, test_losses)
+                _trace_set(et_timekeys, job, timekeys)
                 
                 # Store any extra outputs from global_config
                 for kidx, k in enumerate(grab_aliases):
-                    et_extras[k][job] = others[kidx]
+                    _trace_set(et_extras[k], job, others[kidx])
                 
                 if not(global_config["ONLYTHRESHOLDS"]):
                     train_losses = train_losses[-1]
@@ -212,9 +211,9 @@ def main(iterators, iterator_names=None, global_config=None, bfn_config=None,
     result = {
         "jobs": jobs,
         "var_axes": var_axes,
-        "losses": et_losses.serialize(),
-        "timekeys": et_timekeys.serialize(),
-        "extras": {name: et_extras[name].serialize() for name in grab_aliases},
+        "losses": et_losses,
+        "timekeys": et_timekeys,
+        "extras": {name: et_extras[name] for name in grab_aliases},
     }
 
     return result

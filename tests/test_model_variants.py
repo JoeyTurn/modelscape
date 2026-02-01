@@ -49,7 +49,7 @@ class TestModelVariants(unittest.TestCase):
         global_config = {
             "LR": 1e-2,
             "MAX_ITER": 2,
-            "LOSS_CHECKPOINTS": [1e9],
+            "LOSS_CHECKPOINTS": [1e-1],
             "GAMMA": 1.0,
             "EMA_SMOOTHER": 0.0,
             "ONLYTHRESHOLDS": True,
@@ -78,7 +78,7 @@ class TestModelVariants(unittest.TestCase):
         global_config = {
             "LR": 1e-2,
             "MAX_ITER": 2,
-            "LOSS_CHECKPOINTS": [1e9],
+            "LOSS_CHECKPOINTS": [1e-1],
             "GAMMA": 1.0,
             "EMA_SMOOTHER": 0.0,
             "ONLYTHRESHOLDS": True,

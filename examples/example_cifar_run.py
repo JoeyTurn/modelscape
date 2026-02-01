@@ -8,6 +8,20 @@ from modelscape.backend.utils import ensure_torch
 
 import os, sys
 from FileManager import FileManager
+try:
+    from mupify import mupify, rescale
+    _MUPIFY_AVAILABLE = True
+except Exception as _mupify_err:
+    mupify = None
+    rescale = None
+    _MUPIFY_AVAILABLE = False
+    _MUPIFY_IMPORT_ERROR = _mupify_err
+
+
+def _post_init_mupify(model, opt, gamma=1.0, mup_param="mup", **_):
+    mupify(model, opt, param=mup_param)
+    rescale(model, gamma)
+    return model, opt
 
 def general_batch_fn(X_total, y_total, X=None, y=None, bsz=128,
                      gen=None, **kwargs):
@@ -41,6 +55,9 @@ if __name__ == "__main__":
     args.MAX_ITER = 5e2
     args.LR = 2e-1
     args.LOSS_CHECKPOINTS = 0.1
+    if _MUPIFY_AVAILABLE:
+        args.post_init_fn = _post_init_mupify
+        args.mup_param = "mup"
 
     iterators = [args.N_SAMPLES, range(args.NUM_TRIALS), args.GAMMA]
     iterator_names = ["ntrain", "trial", "GAMMA"]

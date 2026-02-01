@@ -12,10 +12,23 @@ if TEST_ROOT not in sys.path:
 
 from modelscape.model import MLP
 from modelscape.backend.trainloop import train_model
+try:
+    from mupify import mupify, rescale
+    _MUPIFY_AVAILABLE = True
+except Exception as _mupify_err:
+    mupify = None
+    rescale = None
+    _MUPIFY_AVAILABLE = False
+    _MUPIFY_IMPORT_ERROR = _mupify_err
 
 
 def _to_torch(x):
     return x if isinstance(x, torch.Tensor) else torch.as_tensor(x)
+
+
+def _require_mupify():
+    if not _MUPIFY_AVAILABLE:
+        raise unittest.SkipTest(f"mupify not available: {_MUPIFY_IMPORT_ERROR}")
 
 
 def _load_cifar10_subset(n_train=256, n_test=64, classes=None):
@@ -65,6 +78,12 @@ def _spectral_norm(tensor):
     return float(torch.linalg.matrix_norm(tensor, ord=2).item())
 
 
+def _post_init_mupify(model, opt, gamma=1.0, mup_param="ntp", **_):
+    mupify(model, opt, param=mup_param)
+    rescale(model, gamma)
+    return model, opt
+
+
 def _layer_multiplier(layer):
     return float(getattr(layer, "_multiplier", 1.0))
 
@@ -92,6 +111,7 @@ def _run_width(width, X, y, steps=10, seed=0):
         ema_smoother=0.0,
         only_thresholds=True,
         verbose=False,
+        post_init_fn=_post_init_mupify,
         mup_param="ntp",
     )
 
@@ -114,6 +134,7 @@ def _run_width(width, X, y, steps=10, seed=0):
 
 class TestNTPSpectralNorms(unittest.TestCase):
     def test_ntp_spectral_norms_scale_with_width(self):
+        _require_mupify()
         np.random.seed(0)
 
         X, y = _load_cifar10_subset(n_train=256, n_test=64, classes=[[0], [6]])
@@ -137,6 +158,9 @@ class TestNTPSpectralNorms(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if not _MUPIFY_AVAILABLE:
+        print(f"[SKIP] mupify not available: {_MUPIFY_IMPORT_ERROR}")
+        raise SystemExit(0)
     try:
         X, y = _load_cifar10_subset(n_train=256, n_test=64, classes=[[0], [6]])
     except unittest.SkipTest as e:

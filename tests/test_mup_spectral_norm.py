@@ -12,10 +12,23 @@ if TEST_ROOT not in sys.path:
 
 from modelscape.model import MLP
 from modelscape.backend.trainloop import train_model
+try:
+    from mupify import mupify, rescale
+    _MUPIFY_AVAILABLE = True
+except Exception as _mupify_err:
+    mupify = None
+    rescale = None
+    _MUPIFY_AVAILABLE = False
+    _MUPIFY_IMPORT_ERROR = _mupify_err
 
 
 def _to_torch(x):
     return x if isinstance(x, torch.Tensor) else torch.as_tensor(x)
+
+
+def _require_mupify():
+    if not _MUPIFY_AVAILABLE:
+        raise unittest.SkipTest(f"mupify not available: {_MUPIFY_IMPORT_ERROR}")
 
 
 def _load_cifar10_subset(n_train=256, n_test=64, classes=None):
@@ -65,13 +78,22 @@ def _spectral_norm(tensor):
     return float(torch.linalg.matrix_norm(tensor, ord=2).item())
 
 
+def _post_init_mupify(model, opt, gamma=1.0, mup_param="mup", **_):
+    mupify(model, opt, param=mup_param)
+    rescale(model, gamma)
+    return model, opt
+
+
+def _layer_multiplier(layer):
+    return float(getattr(layer, "_multiplier", 1.0))
+
+
 def _run_width(width, X, y, steps=10, seed=0):
     torch.manual_seed(seed)
     gen = torch.Generator(device="cpu").manual_seed(seed)
     bfn = _make_batch_fn(X, y, bsz=64, gen=gen)
 
     model = MLP(d_in=X.shape[1], width=width, depth=2, d_out=1)
-    w0 = model.hidden_layers[0].weight.detach().clone()
 
     out = train_model(
         model=model,
@@ -83,16 +105,27 @@ def _run_width(width, X, y, steps=10, seed=0):
         ema_smoother=0.0,
         only_thresholds=True,
         verbose=False,
+        post_init_fn=_post_init_mupify,
+        mup_param="mup",
     )
 
-    trained = out["model"].model
+    wrapper = out["model"]
+    baseline = wrapper.baseline
+    trained = wrapper.model
+
+    w0 = baseline.hidden_layers[0].weight.detach().clone()
     w1 = trained.hidden_layers[0].weight.detach().clone()
 
-    return _spectral_norm(w0), _spectral_norm(w1 - w0)
+    g_hidden = _layer_multiplier(baseline.hidden_layers[0])
+    init_eff = g_hidden * w0
+    delta_eff = g_hidden * (w1 - w0)
+
+    return _spectral_norm(init_eff), _spectral_norm(delta_eff)
 
 
 class TestMuPSpectralNorms(unittest.TestCase):
     def test_mup_spectral_norms_are_o1(self):
+        _require_mupify()
         np.random.seed(0)
 
         X, y = _load_cifar10_subset(n_train=256, n_test=64, classes=[[0], [6]])
@@ -115,6 +148,9 @@ class TestMuPSpectralNorms(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if not _MUPIFY_AVAILABLE:
+        print(f"[SKIP] mupify not available: {_MUPIFY_IMPORT_ERROR}")
+        raise SystemExit(0)
     try:
         X, y = _load_cifar10_subset(n_train=256, n_test=64, classes=[[0], [6]])
     except unittest.SkipTest as e:

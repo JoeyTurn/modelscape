@@ -13,6 +13,14 @@ from modelscape.data.ntk_coeffs import get_relu_level_coeff_fn
 
 import os, sys
 from FileManager import FileManager
+try:
+    from mupify import mupify, rescale
+    _MUPIFY_AVAILABLE = True
+except Exception as _mupify_err:
+    mupify = None
+    rescale = None
+    _MUPIFY_AVAILABLE = False
+    _MUPIFY_IMPORT_ERROR = _mupify_err
 
 from modelscape.data.data import get_new_polynomial_data
 
@@ -33,6 +41,12 @@ def polynomial_batch_fn(lambdas, Vt, monomials, bsz, data_eigvals, N=10,
         return X, y
     
     return batch_fn
+
+
+def _post_init_mupify(model, opt, gamma=1.0, mup_param="mup", **_):
+    mupify(model, opt, param=mup_param)
+    rescale(model, gamma)
+    return model, opt
 
 if __name__ == "__main__":
 
@@ -62,6 +76,9 @@ if __name__ == "__main__":
     args.N_SAMPLES = [1024]
     args.datasethps = {"normalized": True, "cutoff_mode": 40000, "d": 200, "offset": 6, "alpha": 2.0,
                        "noise_size": 1, "yoffset": 1.2, "beta": 1.2, "binarize": False,"weight_variance": 1, "bias_variance": 1}
+    if _MUPIFY_AVAILABLE:
+        args.post_init_fn = _post_init_mupify
+        args.mup_param = "mup"
 
 
     iterators = [args.N_SAMPLES, range(args.NUM_TRIALS), args.TARGET_MONOMIALS]

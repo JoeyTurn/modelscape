@@ -77,6 +77,53 @@ def tuple_to_numpy(x, dtype=np.float64, clone=False):
         return x
 
 
+def _make_trace(var_names):
+    if not isinstance(var_names, list):
+        var_names = list(var_names)
+    if "outcome" in var_names:
+        raise ValueError("variable name 'outcome' disallowed")
+    return {"var_names": var_names, "config2outcome": {}, "outcome_shape": None}
+
+
+def _trace_set(trace, config, outcome):
+    if not isinstance(trace, dict):
+        raise TypeError("trace must be a dict")
+    if trace.get("outcome_shape") is None:
+        out_array = np.asarray(outcome)
+        if not np.issubdtype(out_array.dtype, np.number):
+            raise ValueError("measurement outcome must be numeric")
+        trace["outcome_shape"] = out_array.shape
+    elif np.shape(outcome) != trace["outcome_shape"]:
+        raise ValueError(f"outcome shape {np.shape(outcome)} != expected {trace['outcome_shape']}")
+
+    config = (config,) if not isinstance(config, tuple) else config
+    var_names = trace.get("var_names")
+    if var_names is not None and len(config) != len(var_names):
+        raise ValueError(f"len config {len(config)} != num vars {len(var_names)}")
+    allowed_types = (int, float, str, tuple, np.integer, np.floating)
+    if not all(isinstance(c, allowed_types) for c in config):
+        raise ValueError(f"config {config} elements must be one of {allowed_types}")
+
+    config2outcome = trace.setdefault("config2outcome", {})
+    if config in config2outcome:
+        raise ValueError(f"config {config} already exists. overwriting not supported")
+    config2outcome[config] = outcome
+    return trace
+
+
+def trace_deserialize(data):
+    if not isinstance(data, dict):
+        raise TypeError("trace data must be a dict")
+    for key in ("var_names", "config2outcome", "outcome_shape"):
+        if key not in data:
+            raise ValueError(f"Missing key in serialized data: {key}")
+    return {
+        "var_names": list(data["var_names"]),
+        "config2outcome": dict(data["config2outcome"]),
+        "outcome_shape": data["outcome_shape"],
+    }
+
+
 ## ---- seeding utils ----
 
 def derive_seed(master_seed, device_id=0):

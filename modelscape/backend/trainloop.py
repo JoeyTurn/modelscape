@@ -3,7 +3,6 @@ import torch
 import inspect
 import torch.nn as nn
 import torch.optim as optim
-from mupify import mupify, rescale
 from modelscape.model import centeredmodel
 from modelscape.backend.utils import _extract_kwargs_for
 
@@ -23,7 +22,7 @@ def _resolve_cls(spec, module):
 
 def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoints=None, percent_thresholds=None,
                   gamma=1., ema_smoother=0.0, X_tr=None, y_tr=None, X_te=None, y_te=None, only_thresholds=False,
-                  verbose=False, optimizer="SGD", loss="MSELoss", mup_param="sp", **kwargs):
+                  verbose=False, optimizer="SGD", loss="MSELoss", post_init_fn=None, **kwargs):
     """
     Returns:
         dict of model, train_losses, test_losses, timekeys, others
@@ -104,9 +103,20 @@ def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoi
     else:
         opt = optimizer_instance
     # opt = torch.optim.SGD(model.parameters(), lr=lr)
-    if mup_param != "sp":
-        mupify(model, opt, param=mup_param)
-        rescale(model, gamma)
+    post_init_fn = post_init_fn or kwargs.pop("post_init_fn", None) or kwargs.pop("POST_INIT_FN", None)
+    if post_init_fn is not None:
+        hook_inputs = dict(kwargs)
+        hook_inputs.update({"model": model, "opt": opt, "lr": lr, "gamma": gamma})
+        try:
+            hook_kwargs, _ = _extract_kwargs_for(post_init_fn, hook_inputs)
+            sig = inspect.signature(post_init_fn)
+            if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                hook_kwargs = hook_inputs
+        except (TypeError, ValueError):
+            hook_kwargs = {"model": model, "opt": opt}
+        hook_out = post_init_fn(**hook_kwargs)
+        if isinstance(hook_out, tuple) and len(hook_out) == 2:
+            model, opt = hook_out
     model = centeredmodel(model).to(next(model.parameters()).device)
     if loss_instance is None:
         loss_fn = loss_cls(**loss_kwargs)
