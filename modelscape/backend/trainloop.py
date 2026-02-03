@@ -103,6 +103,8 @@ def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoi
     else:
         opt = optimizer_instance
     # opt = torch.optim.SGD(model.parameters(), lr=lr)
+
+    # meant for things like Karkada's mupify
     post_init_fn = post_init_fn or kwargs.pop("post_init_fn", None) or kwargs.pop("POST_INIT_FN", None)
     if post_init_fn is not None:
         hook_inputs = dict(kwargs)

@@ -69,7 +69,7 @@ For the list of configurable (pre-set) hyperparameters and their default values,
     Maximum number of gradient steps the network will take
 - LR: 1e-2<br>
     The base learning rate (to be rescaled in the muP setting)
-- DEPTH: 2<br>
+- DEPTH: 1<br>
     The number of hidden layers of the network (must be > 0)
 - WIDTH: 8192<br>
     The width of all hidden layers
