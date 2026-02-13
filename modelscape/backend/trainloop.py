@@ -21,7 +21,7 @@ def _resolve_cls(spec, module):
 
 
 def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoints=None, percent_thresholds=None,
-                  gamma=1., ema_smoother=0.0, X_tr=None, y_tr=None, X_te=None, y_te=None, only_thresholds=False,
+                  ema_smoother=0.0, X_tr=None, y_tr=None, X_te=None, y_te=None, only_thresholds=False,
                   verbose=False, optimizer="SGD", loss="MSELoss", post_init_fn=None, **kwargs):
     """
     Returns:
@@ -97,7 +97,7 @@ def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoi
 
     # model stuff
     if optimizer_instance is None:
-        lr = lr * gamma if gamma >= 1 else lr * (gamma**2.)
+        lr = lr# * gamma if gamma >= 1 else lr * (gamma**2.)
         opt_kwargs.setdefault("lr", lr)
         opt = opt_cls(model.parameters(), **opt_kwargs)
     else:
@@ -108,7 +108,7 @@ def train_model(model, batch_function, lr=1e-2, max_iter=int(1e3), loss_checkpoi
     post_init_fn = post_init_fn or kwargs.pop("post_init_fn", None) or kwargs.pop("POST_INIT_FN", None)
     if post_init_fn is not None:
         hook_inputs = dict(kwargs)
-        hook_inputs.update({"model": model, "opt": opt, "lr": lr, "gamma": gamma})
+        hook_inputs.update({"model": model, "opt": opt, "lr": lr})#, "gamma": gamma})
         try:
             hook_kwargs, _ = _extract_kwargs_for(post_init_fn, hook_inputs)
             sig = inspect.signature(post_init_fn)

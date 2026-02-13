@@ -59,8 +59,30 @@ def run_job(device_id, job, global_config, bfn_config, iterator_names, job_index
     job_seed = derive_seed(base_seed, device_id) + int(job_index or 0)
     GEN, RNG = seed_everything(job_seed, device_id)
     
-    iter_spec = {iterator_names[i]: job[i] for i in range(2, len(iterator_names))}
-    global_config.update(iter_spec)
+    if iterator_names is None:
+        iterator_names = []
+
+    job_spec = {iterator_names[i]: job[i] for i in range(min(len(iterator_names), len(job)))}
+    global_config.update(job_spec)
+
+    n_key_candidates = ("N_SAMPLES", "BSZ", "bsz", "ntrain")
+    trial_key_candidates = ("TRIAL", "trials", "trial")
+
+    def _resolve_job_value(keys, fallback_index=None, default=None):
+        for k in keys:
+            if k in job_spec:
+                return job_spec[k]
+        for k in keys:
+            if k in global_config:
+                return global_config[k]
+        if fallback_index is not None and fallback_index < len(job):
+            return job[fallback_index]
+        if default is not None:
+            return default
+        raise KeyError(f"Missing {keys}; provide via global_config or iterator_names/job")
+
+    n_samples = _resolve_job_value(n_key_candidates, fallback_index=0, default=1024)
+    trial = _resolve_job_value(trial_key_candidates, fallback_index=1, default=0)
 
     torch.set_num_threads(1)  # avoid CPU contention when many procs
 
@@ -72,16 +94,17 @@ def run_job(device_id, job, global_config, bfn_config, iterator_names, job_index
     def make_bfn(n, X, y, **kwargs):
         return base_bfn(**bfn_config_copy, bsz=n, gen=GEN, X=X, y=y, **kwargs)
 
-    bfn_iter_args, _ = _extract_kwargs_for(base_bfn, iter_spec)
+    iter_spec_for_bfn = {k: v for k, v in job_spec.items() if k not in n_key_candidates and k not in trial_key_candidates}
+    bfn_iter_args, _ = _extract_kwargs_for(base_bfn, iter_spec_for_bfn)
     
     if global_config.get("X_te", None) is not None and global_config.get("y_te", None) is not None:
         X_te = ensure_torch(global_config["X_te"], device=device)
         y_te = ensure_torch(global_config["y_te"], device=device)
     else:
         X_te, y_te = make_bfn(n=global_config["N_TEST"], X=None, y=None, **bfn_iter_args)(0)
-    X_tr, y_tr = make_bfn(job[0], X=None, y=None, **bfn_iter_args)(job[1]) if not global_config["ONLINE"] else None, None
+    X_tr, y_tr = make_bfn(n_samples, X=None, y=None, **bfn_iter_args)(trial) if not global_config["ONLINE"] else (None, None)
 
-    bfn = make_bfn(job[0], X=X_tr, y=y_tr, **bfn_iter_args)
+    bfn = make_bfn(n_samples, X=X_tr, y=y_tr, **bfn_iter_args)
     
     d_in = global_config.get("DIM", None)
     if d_in is None:
@@ -106,7 +129,6 @@ def run_job(device_id, job, global_config, bfn_config, iterator_names, job_index
         lr=global_config["LR"],
         max_iter=int(global_config["MAX_ITER"]),
         loss_checkpoints=global_config["LOSS_CHECKPOINTS"],
-        gamma=global_config["GAMMA"],
         ema_smoother=global_config["EMA_SMOOTHER"],
         only_thresholds=global_config["ONLYTHRESHOLDS"],
         verbose=global_config["VERBOSE"],

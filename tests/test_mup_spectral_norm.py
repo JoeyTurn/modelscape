@@ -101,7 +101,6 @@ def _run_width(width, X, y, steps=10, seed=0):
         lr=1e-2,
         max_iter=steps,
         loss_checkpoints=[0.0],
-        gamma=1.0,
         ema_smoother=0.0,
         only_thresholds=True,
         verbose=False,

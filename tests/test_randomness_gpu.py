@@ -47,7 +47,6 @@ class TestRandomnessGPU(unittest.TestCase):
             "LR": 1e-2,
             "MAX_ITER": 1,
             "LOSS_CHECKPOINTS": [1e-1],
-            "GAMMA": 1.0,
             "EMA_SMOOTHER": 0.0,
             "ONLYTHRESHOLDS": False,
             "VERBOSE": False,
